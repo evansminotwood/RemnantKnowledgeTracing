@@ -100,10 +100,18 @@ analyzeRCT/
 ## Setup
 
 ```bash
-uv sync
+uv sync --no-install-package pybkt && uv sync      # pyBKT is built from source for its fast C++ fitter
+uv run pytest                                       # small synthetic end-to-end check
 ```
 
-R (`lme4`, `marginaleffects`, `grf`) is only needed for the optional R analyses.
+On macOS the pyBKT build needs OpenMP: `brew install libomp`, then run the second `uv sync` as
+`CPLUS_INCLUDE_PATH=$(brew --prefix libomp)/include LIBRARY_PATH=$(brew --prefix libomp)/lib uv sync`.
+
+R (`lme4`, `marginaleffects`) is only needed for the optional mixed models, run on a finished result:
+
+```bash
+Rscript R/glmer.R results/<date-time>/predictions.csv results/<date-time>/glmer prior5 bkt dkt dkt_p irt
+```
 
 ---
 
@@ -117,3 +125,7 @@ results/<date-time>/
 ├── summary.md           # the report to read
 └── models/              # trained models, reused by later runs
 ```
+
+Training is the slow part (DKT especially). A model is trained only when `<out>/models` doesn't have it yet, so
+pass the same `--out` again to reuse them, or copy trained `bkt_params.csv` / `dkt_models.pt` / `irt_params.csv`
+(e.g. from a Turing run) into `<out>/models` first.

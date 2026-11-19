@@ -1,0 +1,24 @@
+[project]
+name = "analyzerct"
+version = "0.1.0"
+description = "Estimate an RCT's treatment effect, controlling for prior knowledge with models trained on the remnant"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyBKT",
+    "pyyaml",
+    "scikit-learn<1.8",
+    "setuptools",
+    "torch",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.uv]
+# PyPI's pyBKT wheel is pure Python (slow); build it from the sdist against this env's numpy to get the C++
+# extension. The first sync must skip it:  uv sync --no-install-package pybkt && uv sync
+python-preference = "only-managed"
+no-binary-package = ["pybkt"]
+no-build-isolation-package = ["pybkt"]
