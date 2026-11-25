@@ -35,7 +35,8 @@ class DKTModel(nn.Module):
 
     def forward(self, b):
         h = self.lstm(self.embedding(b["in_skill"]))[0]
-        return self.fc(h).gather(-1, b["tgt_skill"].unsqueeze(-1)).squeeze(-1)
+        # = fc(h)[..., tgt_skill], without the (batch, time, num_skills) output that runs out of memory with many skills
+        return (h * self.fc.weight[b["tgt_skill"]]).sum(-1) + self.fc.bias[b["tgt_skill"]]
 
 
 class ProblemDKTModel(nn.Module):

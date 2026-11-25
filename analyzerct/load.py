@@ -40,7 +40,12 @@ def _scored_logs(df, cols, name):
     if cols.get("skill"):
         keep[cols["skill"]] = "skill_id"
     n = len(df)
-    d = df[list(keep)].rename(columns=keep).drop_duplicates("order_id")
+    d = df[list(keep)].rename(columns=keep)
+    unique_by = ["order_id"]   # a log id is unique across students
+    if not pd.api.types.is_numeric_dtype(d["order_id"]):   # timestamps, e.g. end_time: unique per student only
+        d["order_id"] = pd.to_datetime(d["order_id"], utc=True, format="ISO8601").astype("int64")
+        unique_by = ["user_id", "order_id"]
+    d = d.drop_duplicates(unique_by)
     d = d[d["correct"].isin([0, 1])].astype({"correct": int})
     d = d.sort_values(["user_id", "order_id"]).reset_index(drop=True)
     log(f"[{name}] {n:,} rows -> {len(d):,} scored logs | {d['user_id'].nunique():,} students | "
@@ -50,7 +55,10 @@ def _scored_logs(df, cols, name):
 
 def remnant(path, cols, exclude):
     df = apply_exclude(read(path, needed(cols, exclude, path)), exclude, "remnant")
-    return _scored_logs(df, cols, "remnant")
+    d = _scored_logs(df, cols, "remnant")
+    if not cols.get("skill"):
+        d["skill_id"] = d["problem_id"]   # no skill column: each problem is its own skill
+    return d
 
 
 def history(df, cols, exclude, skills):

@@ -9,8 +9,9 @@ SPEC = "id,discrete_score,skill_id/problem_id,user_xid"
 def test_parse_colspec():
     assert columns.parse_colspec(SPEC) == {"order": "id", "score": "discrete_score", "skill": "skill_id",
                                            "problem": "problem_id", "user": "user_xid"}
+    assert columns.parse_colspec("end_time,discrete_score,problem_id,user_xid")["skill"] is None
     with pytest.raises(ValueError):
-        columns.parse_colspec("id,discrete_score,skill_id,user_xid")
+        columns.parse_colspec("id,discrete_score,a/b/c,user_xid")
 
 
 def _infer(files, rct=None):

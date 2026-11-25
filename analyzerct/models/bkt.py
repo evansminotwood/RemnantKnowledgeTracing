@@ -13,6 +13,7 @@ from . import positions, take, with_skill
 FILE = "bkt_params.csv"
 FORGETS = True     # won the Turing CV (val AUC 0.684 vs 0.673)
 NUM_FITS = 5       # EM restarts per skill
+SKILLS_PER_FIT = 1000
 COLUMNS = {"order_id": "order_id", "user_id": "user_id", "correct": "correct", "skill_name": "skill_id"}
 
 
@@ -37,10 +38,16 @@ def fit(remnant, seed=1):
 
 def _fit_here(df, seed):
     from pyBKT.models import Model
-    model = Model(seed=seed, num_fits=NUM_FITS)
-    # pyBKT converts the skill column to str in place, so give it a copy
-    model.fit(data=df.copy(), defaults=COLUMNS, forgets=FORGETS)
-    return model.params()
+    # pyBKT scans the whole frame once per skill, so with many skills (e.g. problems as skills) fit in chunks;
+    # skills are fit independently, so this changes nothing else
+    skills = df["skill_id"].unique()
+    params = []
+    for i in range(0, len(skills), SKILLS_PER_FIT):
+        model = Model(seed=seed, num_fits=NUM_FITS)
+        # pyBKT converts the skill column to str in place, so give it a copy
+        model.fit(data=df[df["skill_id"].isin(skills[i:i + SKILLS_PER_FIT])].copy(), defaults=COLUMNS, forgets=FORGETS)
+        params.append(model.params())
+    return pd.concat(params)
 
 
 def save(params, path):

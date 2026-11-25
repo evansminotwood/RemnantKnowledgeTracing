@@ -1,0 +1,21 @@
+remnant:   # from the command line
+  order:     end_time
+  score:     discrete_score
+  skill:                                  # none: each problem is its own skill
+  problem:   problem_id
+  user:      user_xid
+rct_students:
+  order:     id
+  score:     discrete_score
+  problem:   problem_id
+  user:      user_xid
+rct_data:
+  user:      user_xid
+  log:       pl_id                        # matches rct_students.order
+  problem:   problem_id
+  class:     class_id
+  treatment: treatment                    # column or expression, 1 = treated
+  outcome:   next_problem_across          # column or expression, 0/1
+  prior5:    prior_5_across
+exclude:
+  - user_xid <= 1000

@@ -24,11 +24,12 @@ COMMENTS = {("rct_data", "log"): "matches rct_students.order",
 
 
 def parse_colspec(spec):
-    """'id,discrete_score,skill_id/problem_id,user_xid' -> {order, score, skill, problem, user}."""
+    """'id,discrete_score,skill_id/problem_id,user_xid' -> {order, score, skill, problem, user}.
+    Without a skill ('id,discrete_score,problem_id,user_xid') skill is None and each problem is its own skill."""
     parts = [p.strip() for p in spec.split(",")]
-    if len(parts) != 4 or parts[2].count("/") != 1:
-        raise ValueError(f"expected order,score,skill/problem,user, got {spec!r}")
-    skill, problem = parts[2].split("/")
+    if len(parts) != 4 or parts[2].count("/") > 1:
+        raise ValueError(f"expected order,score,skill/problem,user (or order,score,problem,user), got {spec!r}")
+    skill, problem = parts[2].split("/") if "/" in parts[2] else (None, parts[2])
     return dict(zip(REMNANT_FIELDS, [parts[0], parts[1], skill, problem, parts[3]]))
 
 
@@ -64,6 +65,7 @@ def _pick(df, check, tiers, used):
     """The one column passing `check` at the first tier (exact names, then regexes) that has exactly one match."""
     passing = [c for c in df.columns if c not in used and check(df[c])]
     for tier in tiers:
+        tier = [t for t in tier if t]   # a field not found in an earlier file is None
         hits = [c for c in passing if any(c == t if not t.startswith("re:") else re.search(t[3:], c, re.I) for t in tier)]
         if len(hits) == 1:
             return hits[0], None
@@ -132,7 +134,7 @@ def write(schema, path, notes=None):
     lines = ["# schema.yaml: which column is which. Written by analyzeRCT.py; check it and edit by hand.",
              "# Blank = not found. treatment, outcome and exclude take pandas expressions, e.g. strategy != '[]'.",
              "remnant:   # from the command line"]
-    lines += [f"  {f + ':':<10} {schema['remnant'][f]}" for f in REMNANT_FIELDS]
+    lines += [f"  {f + ':':<10} {schema['remnant'][f] or ''}".rstrip() for f in REMNANT_FIELDS]
     for file, fields in FIELDS.items():
         lines.append(f"{file}:")
         for f in fields:
